@@ -37,7 +37,7 @@ https://github.com/user-attachments/assets/f6d84421-b1a2-44e2-ad01-1e775ac1c45b
 |---|---|---|
 | KDE Plasma (KWin) | Native KWin compositor effect | Full real-time refraction of the actual desktop behind the window, no feedback loop |
 | GNOME | App-side OpenGL fallback | XGetImage screen capture with blur and refraction shader |
-| XFCE | `xfwm4` compositor-side liquid glass pass | Requires `xfwm4` compositing enabled; falls back to app-side shader mode if the compositor is off |
+| XFCE | `xfwm4` compositor-side liquid glass pass (requires patched `xfwm4`) | Full compositor blur when patched `xfwm4` is active; falls back to app-side OpenGL fallback if compositing is off |
 | MATE | App-side OpenGL fallback | XGetImage screen capture with blur and refraction shader |
 | i3 / Openbox / other X11 | App-side OpenGL fallback | XGetImage screen capture with blur and refraction shader |
 | Wayland (any DE) | Shader fallback | Pure shader gradient, no screen capture |

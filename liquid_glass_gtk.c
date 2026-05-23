@@ -1146,7 +1146,7 @@ int main(int argc,char*argv[]){
         backdrop_refraction_set_capture_enabled(&G.refract, !(plasma || xfce_backdrop));
     }
     if(xfce_session_active() && !x11_compositor_active()){
-        fprintf(stderr,"liquid-glass: XFCE needs xfwm4 compositor enabled for liquid refraction; falling back to shader mode.\n");
+        fprintf(stderr,"liquid-glass: XFCE needs xfwm4 compositor enabled for liquid refraction; falling back to app-side capture.\n");
     }
     G.active=-1;
     snprintf(G.exe_path,sizeof(G.exe_path),"%s",(argc>0&&argv[0])?argv[0]:"./liquid_glass_gtk");
