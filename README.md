@@ -12,7 +12,9 @@
     <img src="https://img.shields.io/badge/language-C-4a90d9?style=for-the-badge&logo=c" alt="Language"/>
     <img src="https://img.shields.io/badge/platform-Linux-4a90d9?style=for-the-badge&logo=linux&logoColor=white" alt="Platform"/>
   </p>
+  <br/>
   <img src="liquid.png" width="220" alt="Liquid Glass Terminal"/>
+  <br/>
 </p>
 
 ## Features
