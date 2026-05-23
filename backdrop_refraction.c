@@ -10,8 +10,6 @@
 
 #include <gdk/gdkx.h>
 #include <X11/Xlib.h>
-#include <X11/extensions/Xcomposite.h>
-#include <X11/extensions/Xrender.h>
 #include <X11/Xutil.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -189,165 +187,9 @@ static unsigned char scale_masked(unsigned long pixel,unsigned long mask,int shi
     return (unsigned char)((v*255UL)/max);
 }
 
-static Window find_root_child(Display*dpy,Window root,Window win){
-    Window cur=win;
-    while(cur!=root&&cur!=None){
-        Window root_ret,parent_ret;
-        Window*children=NULL;
-        unsigned int n=0;
-        if(!XQueryTree(dpy,cur,&root_ret,&parent_ret,&children,&n))return None;
-        if(children)XFree(children);
-        if(parent_ret==root)return cur;
-        cur=parent_ret;
-    }
-    return None;
-}
-
-static gboolean compositor_running(Display*dpy,int screen){
-    char sel_name[32];
-    snprintf(sel_name,sizeof(sel_name),"_NET_WM_CM_%d",screen);
-    Atom sel=XInternAtom(dpy,sel_name,False);
-    return XGetSelectionOwner(dpy,sel)!=None;
-}
-
-static gboolean capture_composited_backdrop(
-    Display*dpy,Window root,Window self,int cap_x,int cap_y,int cap_w,int cap_h,
-    unsigned char**rgba_out)
-{
-    int composite_event=0, composite_error=0;
-    if(!XCompositeQueryExtension(dpy,&composite_event,&composite_error)){
-        return FALSE;
-    }
-
-    int screen=DefaultScreen(dpy);
-    if(!compositor_running(dpy,screen)){
-        return FALSE;
-    }
-
-    Window root_ret=0,parent_ret=0;
-    Window*children=NULL;
-    unsigned int nchildren=0;
-    if(!XQueryTree(dpy,root,&root_ret,&parent_ret,&children,&nchildren)){
-        return FALSE;
-    }
-
-    Window frame=find_root_child(dpy,root,self);
-    if(frame==None){
-        if(children)XFree(children);
-        return FALSE;
-    }
-    gboolean seen_self=FALSE;
-    Pixmap dst=XCreatePixmap(dpy,root,(unsigned int)cap_w,(unsigned int)cap_h,(unsigned int)DefaultDepth(dpy,screen));
-    if(!dst){
-        if(children)XFree(children);
-        return FALSE;
-    }
-
-    XRenderPictFormat*dst_fmt=XRenderFindVisualFormat(dpy,DefaultVisual(dpy,screen));
-    if(!dst_fmt){
-        XFreePixmap(dpy,dst);
-        if(children)XFree(children);
-        return FALSE;
-    }
-
-    Picture dst_pic=XRenderCreatePicture(dpy,dst,dst_fmt,0,NULL);
-    if(!dst_pic){
-        XFreePixmap(dpy,dst);
-        if(children)XFree(children);
-        return FALSE;
-    }
-
-    XRenderColor clear={0,0,0,0};
-    Picture clear_pic=XRenderCreateSolidFill(dpy,&clear);
-    if(clear_pic){
-        XRenderComposite(dpy,PictOpSrc,clear_pic,None,dst_pic,0,0,0,0,0,0,(unsigned int)cap_w,(unsigned int)cap_h);
-        XRenderFreePicture(dpy,clear_pic);
-    }
-
-    for(unsigned int i=0;i<nchildren;i++){
-        Window win=children[i];
-        if(win==frame){
-            seen_self=TRUE;
-            break;
-        }
-
-        XWindowAttributes wa;
-        if(!XGetWindowAttributes(dpy,win,&wa))continue;
-        if(wa.map_state!=IsViewable || wa.width<1 || wa.height<1)continue;
-
-        int wx=wa.x;
-        int wy=wa.y;
-        int wr=wx+wa.width;
-        int wb=wy+wa.height;
-        int ix1=cap_x>wx?cap_x:wx;
-        int iy1=cap_y>wy?cap_y:wy;
-        int ix2=(cap_x+cap_w)<wr?(cap_x+cap_w):wr;
-        int iy2=(cap_y+cap_h)<wb?(cap_y+cap_h):wb;
-        if(ix1>=ix2 || iy1>=iy2)continue;
-
-        Pixmap src_pix=XCompositeNameWindowPixmap(dpy,win);
-        if(!src_pix)continue;
-
-        XRenderPictFormat*src_fmt=XRenderFindVisualFormat(dpy,wa.visual);
-        if(!src_fmt){
-            XFreePixmap(dpy,src_pix);
-            continue;
-        }
-
-        Picture src_pic=XRenderCreatePicture(dpy,src_pix,src_fmt,0,NULL);
-        if(!src_pic){
-            XFreePixmap(dpy,src_pix);
-            continue;
-        }
-
-        int src_x=ix1-wx;
-        int src_y=iy1-wy;
-        int dst_x=ix1-cap_x;
-        int dst_y=iy1-cap_y;
-        XRenderComposite(dpy,PictOpOver,src_pic,None,dst_pic,
-            src_x,src_y,0,0,dst_x,dst_y,(unsigned int)(ix2-ix1),(unsigned int)(iy2-iy1));
-
-        XRenderFreePicture(dpy,src_pic);
-        XFreePixmap(dpy,src_pix);
-    }
-
-    if(children)XFree(children);
-    XRenderFreePicture(dpy,dst_pic);
-    if(!seen_self){
-        XFreePixmap(dpy,dst);
-        return FALSE;
-    }
-
-    XSync(dpy,False);
-    XImage*img=XGetImage(dpy,dst,0,0,(unsigned int)cap_w,(unsigned int)cap_h,AllPlanes,ZPixmap);
-    XFreePixmap(dpy,dst);
-    if(!img){
-        return FALSE;
-    }
-
-    int rs=mask_shift(img->red_mask),gs=mask_shift(img->green_mask),bs=mask_shift(img->blue_mask);
-    int rb=mask_bits(img->red_mask),gb=mask_bits(img->green_mask),bb=mask_bits(img->blue_mask);
-    unsigned char*rgba=g_malloc((size_t)cap_w*(size_t)cap_h*4);
-    memset(rgba,0,(size_t)cap_w*(size_t)cap_h*4);
-    for(int y=0;y<cap_h;y++){
-        for(int x=0;x<cap_w;x++){
-            unsigned long p=XGetPixel(img,x,y);
-            size_t i=((size_t)y*(size_t)cap_w+(size_t)x)*4;
-            rgba[i+0]=scale_masked(p,img->red_mask,rs,rb);
-            rgba[i+1]=scale_masked(p,img->green_mask,gs,gb);
-            rgba[i+2]=scale_masked(p,img->blue_mask,bs,bb);
-            rgba[i+3]=255;
-        }
-    }
-    XDestroyImage(img);
-    *rgba_out=rgba;
-    return TRUE;
-}
-
 static void update_backdrop_texture(BackdropRefraction*r,GtkWidget*window,GtkWidget*surface,int w,int h,int scale){
     gint64 now=g_get_monotonic_time();
     if(scale<1)scale=1;
-    if(now-r->start_us<1000000)return;
     if(now-r->last_capture_us<66000&&r->tex_w==w&&r->tex_h==h&&r->capture_scale==scale)return;
     r->last_capture_us=now;
     r->has_backdrop=FALSE;
@@ -382,61 +224,30 @@ static void update_backdrop_texture(BackdropRefraction*r,GtkWidget*window,GtkWid
     int cap_h=cap_b-cap_y;
     if(cap_w<1||cap_h<1)return;
 
-    unsigned char*rgba=NULL;
-    gboolean captured=FALSE;
-    if(compositor_running(dpy,screen)){
-        captured=capture_composited_backdrop(dpy,root,GDK_WINDOW_XID(wg),cap_x,cap_y,cap_w,cap_h,&rgba);
-    }
+    XImage*img=XGetImage(dpy,root,cap_x,cap_y,(unsigned int)cap_w,(unsigned int)cap_h,AllPlanes,ZPixmap);
+    if(!img)return;
 
-    if(!captured){
-        XImage*img=XGetImage(dpy,root,cap_x,cap_y,(unsigned int)cap_w,(unsigned int)cap_h,AllPlanes,ZPixmap);
-        if(!img)return;
-
-        int rs=mask_shift(img->red_mask),gs=mask_shift(img->green_mask),bs=mask_shift(img->blue_mask);
-        int rb=mask_bits(img->red_mask),gb=mask_bits(img->green_mask),bb=mask_bits(img->blue_mask);
-        rgba=g_malloc((size_t)w*(size_t)h*4);
-        memset(rgba,0,(size_t)w*(size_t)h*4);
-        int dst_x=cap_x-sx;
-        int dst_y=cap_y-sy;
-        for(int y=0;y<h;y++){
-            int iy=y-dst_y;
-            if(iy<0||iy>=cap_h)continue;
-            for(int x=0;x<w;x++){
-                int ix=x-dst_x;
-                if(ix<0||ix>=cap_w)continue;
-                unsigned long p=XGetPixel(img,ix,iy);
-                size_t i=((size_t)y*(size_t)w+(size_t)x)*4;
-                rgba[i+0]=scale_masked(p,img->red_mask,rs,rb);
-                rgba[i+1]=scale_masked(p,img->green_mask,gs,gb);
-                rgba[i+2]=scale_masked(p,img->blue_mask,bs,bb);
-                rgba[i+3]=255;
-            }
+    int rs=mask_shift(img->red_mask),gs=mask_shift(img->green_mask),bs=mask_shift(img->blue_mask);
+    int rb=mask_bits(img->red_mask),gb=mask_bits(img->green_mask),bb=mask_bits(img->blue_mask);
+    unsigned char*rgba=g_malloc((size_t)w*(size_t)h*4);
+    memset(rgba,0,(size_t)w*(size_t)h*4);
+    int dst_x=cap_x-sx;
+    int dst_y=cap_y-sy;
+    for(int y=0;y<h;y++){
+        int iy=y-dst_y;
+        if(iy<0||iy>=cap_h)continue;
+        for(int x=0;x<w;x++){
+            int ix=x-dst_x;
+            if(ix<0||ix>=cap_w)continue;
+            unsigned long p=XGetPixel(img,ix,iy);
+            size_t i=((size_t)y*(size_t)w+(size_t)x)*4;
+            rgba[i+0]=scale_masked(p,img->red_mask,rs,rb);
+            rgba[i+1]=scale_masked(p,img->green_mask,gs,gb);
+            rgba[i+2]=scale_masked(p,img->blue_mask,bs,bb);
+            rgba[i+3]=255;
         }
-        XDestroyImage(img);
-    } else if(rgba && (cap_w!=w || cap_h!=h)){
-        unsigned char*resized=g_malloc((size_t)w*(size_t)h*4);
-        memset(resized,0,(size_t)w*(size_t)h*4);
-        int dst_x=cap_x-sx;
-        int dst_y=cap_y-sy;
-        for(int y=0;y<h;y++){
-            int iy=y-dst_y;
-            if(iy<0||iy>=cap_h)continue;
-            for(int x=0;x<w;x++){
-                int ix=x-dst_x;
-                if(ix<0||ix>=cap_w)continue;
-                size_t src_i=((size_t)iy*(size_t)cap_w+(size_t)ix)*4;
-                size_t dst_i=((size_t)y*(size_t)w+(size_t)x)*4;
-                resized[dst_i+0]=rgba[src_i+0];
-                resized[dst_i+1]=rgba[src_i+1];
-                resized[dst_i+2]=rgba[src_i+2];
-                resized[dst_i+3]=255;
-            }
-        }
-        g_free(rgba);
-        rgba=resized;
     }
-
-    if(!rgba)return;
+    XDestroyImage(img);
 
     glBindTexture(GL_TEXTURE_2D,r->backdrop_tex);
     if(r->tex_w!=w||r->tex_h!=h){

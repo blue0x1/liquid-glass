@@ -308,6 +308,12 @@ static void on_layout_changed(GtkWidget*w,GtkAllocation*a,gpointer d){
     if(G.window&&gtk_widget_get_realized(G.window)) apply_blur_hint(G.window);
 }
 
+static gboolean show_gl_idle(gpointer d){
+    (void)d;
+    if(G.gl_area) gtk_widget_show(G.gl_area);
+    return G_SOURCE_REMOVE;
+}
+
 static gboolean sidebar_show_idle(gpointer d){
     (void)d;
     if(G.hpaned){
@@ -1146,7 +1152,7 @@ int main(int argc,char*argv[]){
         backdrop_refraction_set_capture_enabled(&G.refract, !(plasma || xfce_backdrop));
     }
     if(xfce_session_active() && !x11_compositor_active()){
-        fprintf(stderr,"liquid-glass: XFCE needs xfwm4 compositor enabled for liquid refraction; falling back to app-side capture.\n");
+        fprintf(stderr,"liquid-glass: XFCE needs xfwm4 compositor enabled for liquid refraction; falling back to shader mode.\n");
     }
     G.active=-1;
     snprintf(G.exe_path,sizeof(G.exe_path),"%s",(argc>0&&argv[0])?argv[0]:"./liquid_glass_gtk");
@@ -1474,6 +1480,7 @@ int main(int argc,char*argv[]){
     g_signal_connect(gl_area,"unrealize",G_CALLBACK(gl_area_unrealize),NULL);
     g_signal_connect(gl_area,"render",G_CALLBACK(gl_area_render),NULL);
     gtk_widget_add_tick_callback(gl_area,gl_tick,NULL,NULL);
+    gtk_widget_set_no_show_all(gl_area,TRUE);
     gtk_container_add(GTK_CONTAINER(terminal_overlay),gl_area);
 
     GtkWidget*stack=gtk_stack_new();
@@ -1491,7 +1498,8 @@ int main(int argc,char*argv[]){
     {
         GdkDisplay*disp=gdk_screen_get_display(screen);
         GdkMonitor*mon=gdk_display_get_primary_monitor(disp);
-        if(!mon) mon=gdk_display_get_monitor(disp,0);
+        if(!mon&&gdk_display_get_n_monitors(disp)>0)
+            mon=gdk_display_get_monitor(disp,0);
         if(mon){
             GdkRectangle geo; gdk_monitor_get_geometry(mon,&geo);
             gtk_window_move(GTK_WINDOW(win),geo.x+(geo.width-WIN_W)/2,geo.y+(geo.height-WIN_H)/2);
@@ -1504,6 +1512,7 @@ int main(int argc,char*argv[]){
         gtk_paned_set_position(GTK_PANED(G.hpaned),0);
     }
 
+    g_idle_add(show_gl_idle,NULL);
     g_idle_add(sidebar_show_idle,NULL);
     gtk_main();
     return 0;
