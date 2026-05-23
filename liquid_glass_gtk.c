@@ -1491,8 +1491,11 @@ int main(int argc,char*argv[]){
     {
         GdkDisplay*disp=gdk_screen_get_display(screen);
         GdkMonitor*mon=gdk_display_get_primary_monitor(disp);
-        GdkRectangle geo; gdk_monitor_get_geometry(mon,&geo);
-        gtk_window_move(GTK_WINDOW(win),geo.x+(geo.width-WIN_W)/2,geo.y+(geo.height-WIN_H)/2);
+        if(!mon) mon=gdk_display_get_monitor(disp,0);
+        if(mon){
+            GdkRectangle geo; gdk_monitor_get_geometry(mon,&geo);
+            gtk_window_move(GTK_WINDOW(win),geo.x+(geo.width-WIN_W)/2,geo.y+(geo.height-WIN_H)/2);
+        }
     }
 
     gtk_widget_show_all(win);

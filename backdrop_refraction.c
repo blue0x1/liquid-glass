@@ -189,6 +189,20 @@ static unsigned char scale_masked(unsigned long pixel,unsigned long mask,int shi
     return (unsigned char)((v*255UL)/max);
 }
 
+static Window find_root_child(Display*dpy,Window root,Window win){
+    Window cur=win;
+    while(cur!=root&&cur!=None){
+        Window root_ret,parent_ret;
+        Window*children=NULL;
+        unsigned int n=0;
+        if(!XQueryTree(dpy,cur,&root_ret,&parent_ret,&children,&n))return None;
+        if(children)XFree(children);
+        if(parent_ret==root)return cur;
+        cur=parent_ret;
+    }
+    return None;
+}
+
 static gboolean compositor_running(Display*dpy,int screen){
     char sel_name[32];
     snprintf(sel_name,sizeof(sel_name),"_NET_WM_CM_%d",screen);
@@ -217,6 +231,11 @@ static gboolean capture_composited_backdrop(
         return FALSE;
     }
 
+    Window frame=find_root_child(dpy,root,self);
+    if(frame==None){
+        if(children)XFree(children);
+        return FALSE;
+    }
     gboolean seen_self=FALSE;
     Pixmap dst=XCreatePixmap(dpy,root,(unsigned int)cap_w,(unsigned int)cap_h,(unsigned int)DefaultDepth(dpy,screen));
     if(!dst){
@@ -247,7 +266,7 @@ static gboolean capture_composited_backdrop(
 
     for(unsigned int i=0;i<nchildren;i++){
         Window win=children[i];
-        if(win==self){
+        if(win==frame){
             seen_self=TRUE;
             break;
         }
@@ -266,8 +285,11 @@ static gboolean capture_composited_backdrop(
         int iy2=(cap_y+cap_h)<wb?(cap_y+cap_h):wb;
         if(ix1>=ix2 || iy1>=iy2)continue;
 
+        GdkDisplay*_gdisp=gdk_display_get_default();
+        gdk_x11_display_error_trap_push(_gdisp);
         Pixmap src_pix=XCompositeNameWindowPixmap(dpy,win);
-        if(!src_pix)continue;
+        XSync(dpy,False);
+        if(gdk_x11_display_error_trap_pop(_gdisp)||!src_pix)continue;
 
         XRenderPictFormat*src_fmt=XRenderFindVisualFormat(dpy,wa.visual);
         if(!src_fmt){
