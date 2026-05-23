@@ -264,8 +264,6 @@ static gboolean capture_composited_backdrop(
         XRenderFreePicture(dpy,clear_pic);
     }
 
-    GdkDisplay*_gdisp=gdk_display_get_default();
-    gdk_x11_display_error_trap_push(_gdisp);
     for(unsigned int i=0;i<nchildren;i++){
         Window win=children[i];
         if(win==frame){
@@ -312,7 +310,6 @@ static gboolean capture_composited_backdrop(
         XRenderFreePicture(dpy,src_pic);
         XFreePixmap(dpy,src_pix);
     }
-    gdk_x11_display_error_trap_pop_ignored(_gdisp);
 
     if(children)XFree(children);
     XRenderFreePicture(dpy,dst_pic);
@@ -350,6 +347,7 @@ static gboolean capture_composited_backdrop(
 static void update_backdrop_texture(BackdropRefraction*r,GtkWidget*window,GtkWidget*surface,int w,int h,int scale){
     gint64 now=g_get_monotonic_time();
     if(scale<1)scale=1;
+    if(now-r->start_us<1000000)return;
     if(now-r->last_capture_us<66000&&r->tex_w==w&&r->tex_h==h&&r->capture_scale==scale)return;
     r->last_capture_us=now;
     r->has_backdrop=FALSE;
