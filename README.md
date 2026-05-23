@@ -1,7 +1,6 @@
 # Liquid Glass Terminal
 
-A GTK3 terminal emulator with a liquid glass aesthetic for Linux.  
-Built and maintained by **Chokri Hammedi** ([@blue0x1](https://github.com/blue0x1)).
+A GTK3 terminal emulator with a liquid glass aesthetic for Linux.
 
 <p align="center">
   <img src="liquid.png" width="220" alt="Liquid Glass Terminal"/>
