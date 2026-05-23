@@ -25,7 +25,9 @@ https://github.com/user-attachments/assets/edaa4c62-0834-4f24-9c17-2383366954b6
 ## Screenshot
 
 <p align="center">
-  <img width="900" alt="Liquid Glass Terminal Screenshot" src="https://github.com/user-attachments/assets/b35b87b7-68ab-4c75-b69a-da56c5b23c2c" />
+  <img  width="900" alt="Liquid Glass Terminal Screenshot"  src="https://github.com/user-attachments/assets/cf4a3c45-0c4e-45a9-8586-c4cd6849b113" />
+
+  
 </p>
 
 ## Desktop Support
