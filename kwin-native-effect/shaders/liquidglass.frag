@@ -1,3 +1,11 @@
+/*
+ * Liquid Glass Terminal
+ * Author: Chokri Hammedi (blue0x1)
+ * https://github.com/blue0x1/liquid-glass
+ * License: MIT
+ * Copyright (C) 2026 Chokri Hammedi. All rights reserved.
+ */
+
 #version 140
 
 uniform sampler2D u_backdrop;

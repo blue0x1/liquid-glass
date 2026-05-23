@@ -1,3 +1,11 @@
+/*
+ * Liquid Glass Terminal
+ * Author: Chokri Hammedi (blue0x1)
+ * https://github.com/blue0x1/liquid-glass
+ * License: MIT
+ * Copyright (C) 2026 Chokri Hammedi. All rights reserved.
+ */
+
 #include "backdrop_refraction.h"
 
 #include <gdk/gdkx.h>

@@ -28,14 +28,25 @@ https://github.com/user-attachments/assets/edaa4c62-0834-4f24-9c17-2383366954b6
   <img width="900" alt="Liquid Glass Terminal Screenshot" src="https://github.com/user-attachments/assets/b35b87b7-68ab-4c75-b69a-da56c5b23c2c" />
 </p>
 
+## Desktop Support
+
+| Desktop | Glass Mode | Quality |
+|---|---|---|
+| KDE Plasma (KWin) | Native KWin compositor effect | Full real-time refraction of the actual desktop behind the window, no feedback loop |
+| GNOME | App-side OpenGL fallback | XGetImage screen capture with blur and refraction shader |
+| XFCE | App-side OpenGL fallback | XGetImage screen capture with blur and refraction shader |
+| MATE | App-side OpenGL fallback | XGetImage screen capture with blur and refraction shader |
+| i3 / Openbox / other X11 | App-side OpenGL fallback | XGetImage screen capture with blur and refraction shader |
+| Wayland (any DE) | Shader fallback | Pure shader gradient, no screen capture |
+
 ## Features
 
-- **Native KWin compositor effect** — captures the actual desktop behind the window at compositor level, applies real-time refraction, chromatic aberration, Blinn-Phong specular, fresnel, and frosted grain via GLSL
-- **App-side OpenGL refraction fallback** — XGetImage-based backdrop capture with multi-tap blur and chromatic aberration shader for non-KDE sessions
+- Native KWin compositor effect for KDE Plasma: captures the actual desktop at compositor level, applies refraction, chromatic aberration, Blinn-Phong specular, fresnel, and frosted grain via GLSL
+- App-side OpenGL refraction fallback using X11 screen capture for non-KDE sessions
 - KWin blur-behind support (Plasma desktop)
 - Tabbed terminal sessions with rename and reorder
 - Collapsible sidebar with tab navigator
-- Live settings window — change theme color and glass opacity in real time
+- Live settings window, change theme color and glass opacity in real time
 - macOS-style window controls
 - 9 built-in color themes: Blue Frost, Graphite, Red, Blue, Yellow, Purple, Pink, Black, Gray
 - Custom hex color picker
@@ -91,7 +102,7 @@ sudo apt install cmake kwin-dev qt6-base-dev libkf6coreaddons-dev extra-cmake-mo
 sudo make kwin-native-install
 ```
 
-This installs the KWin plugin and enables it automatically. The effect captures the composited desktop behind the terminal window directly in the compositor — no X11 screen capture needed, no feedback loop.
+This installs the KWin plugin and enables it automatically. The effect captures the composited desktop behind the terminal window directly in the compositor, with no X11 screen capture and no feedback loop.
 
 **Build .deb package:**
 

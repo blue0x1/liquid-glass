@@ -1,3 +1,11 @@
+/*
+ * Liquid Glass Terminal
+ * Author: Chokri Hammedi (blue0x1)
+ * https://github.com/blue0x1/liquid-glass
+ * License: MIT
+ * Copyright (C) 2026 Chokri Hammedi. All rights reserved.
+ */
+
 #include "liquid_glass_native_effect.h"
 
 #include <kwin/core/rendertarget.h>
