@@ -23,7 +23,7 @@ XFWM4_PATCH = $(CURDIR)/xfwm4-native-effect/liquidglass-xfwm4.patch
 
 .PHONY: all binary deb deb-xfce clean install uninstall kwin-native-build kwin-native-install xfce-native-fetch xfce-native-build xfce-native-install
 
-all: binary deb
+all: binary deb deb-xfce
 
 liquid_icon_data.h: liquid.png
 	xxd -i liquid.png > liquid_icon_data.h
