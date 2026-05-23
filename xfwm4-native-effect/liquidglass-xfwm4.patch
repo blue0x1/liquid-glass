@@ -1,0 +1,146 @@
+diff --git a/src/compositor.c b/src/compositor.c
+index f1d054de3..e8314fd76 100644
+--- a/src/compositor.c
++++ b/src/compositor.c
+@@ -2222,6 +2222,130 @@ paint_cursor (ScreenInfo *screen_info, XserverRegion region, Picture paint_buffe
+                       screen_info->cursorLocation.height);
+ }
+ 
++static gboolean
++is_liquid_glass_window (CWindow *cw)
++{
++    const gchar *res_name;
++    const gchar *res_class;
++
++    if (!cw || !cw->c)
++    {
++        return FALSE;
++    }
++
++    res_name = cw->c->class.res_name;
++    res_class = cw->c->class.res_class;
++
++    return ((res_name && (!g_ascii_strcasecmp (res_name, "liquid_glass_gtk") ||
++                          !g_ascii_strcasecmp (res_name, "liquid-glass"))) ||
++            (res_class && (!g_ascii_strcasecmp (res_class, "liquid_glass_gtk") ||
++                           !g_ascii_strcasecmp (res_class, "liquid-glass"))));
++}
++
++static void
++paint_liquid_glass_backdrop (CWindow *cw, XserverRegion region, Picture paint_buffer)
++{
++    DisplayInfo *display_info;
++    ScreenInfo *screen_info;
++    Display *dpy;
++    gint x, y;
++    guint w, h;
++    Pixmap backdrop_pixmap;
++    Picture backdrop_picture;
++    XRenderPictFormat *format;
++    Picture tint;
++    const struct {
++        int dx;
++        int dy;
++        gdouble alpha;
++    } taps[] = {
++        { 0,  0, 0.14 },
++        { 1,  0, 0.09 }, {-1,  0, 0.09 }, { 0,  1, 0.09 }, { 0, -1, 0.09 },
++        { 1,  1, 0.06 }, {-1,  1, 0.06 }, { 1, -1, 0.06 }, {-1, -1, 0.06 },
++        { 2,  0, 0.04 }, {-2,  0, 0.04 }, { 0,  2, 0.04 }, { 0, -2, 0.04 },
++        { 3,  0, 0.02 }, {-3,  0, 0.02 }, { 0,  3, 0.02 }, { 0, -3, 0.02 },
++        { 4,  0, 0.01 }, {-4,  0, 0.01 }, { 0,  4, 0.01 }, { 0, -4, 0.01 }
++    };
++    guint i;
++
++    if (!cw || !cw->screen_info)
++    {
++        return;
++    }
++    (void) region;
++
++    get_paint_bounds (cw, &x, &y, &w, &h);
++    if (w < 1 || h < 1)
++    {
++        return;
++    }
++
++    screen_info = cw->screen_info;
++    display_info = screen_info->display_info;
++    dpy = display_info->dpy;
++    format = XRenderFindVisualFormat (dpy, screen_info->visual);
++    if (!format)
++    {
++        return;
++    }
++
++    backdrop_pixmap = safe_create_pixmap (screen_info, screen_info->output, w, h, screen_info->depth);
++    if (backdrop_pixmap == None)
++    {
++        return;
++    }
++
++    backdrop_picture = XRenderCreatePicture (dpy, backdrop_pixmap, format, 0, NULL);
++    if (backdrop_picture == None)
++    {
++        XFreePixmap (dpy, backdrop_pixmap);
++        return;
++    }
++
++    XRenderComposite (dpy, PictOpSrc, paint_buffer, None, backdrop_picture,
++                      x, y, 0, 0, 0, 0, w, h);
++
++    tint = solid_picture (screen_info, TRUE, 0.12, 0.10, 0.12, 0.16);
++    if (!tint)
++    {
++        XRenderFreePicture (dpy, backdrop_picture);
++        XFreePixmap (dpy, backdrop_pixmap);
++        return;
++    }
++
++    for (i = 0; i < G_N_ELEMENTS (taps); i++)
++    {
++        Picture alpha;
++
++        if (taps[i].alpha <= 0.0)
++        {
++            continue;
++        }
++        alpha = solid_picture (screen_info, FALSE, taps[i].alpha, 0.0, 0.0, 0.0);
++        if (alpha)
++        {
++            XRenderComposite (dpy, PictOpOver,
++                              backdrop_picture, alpha,
++                              paint_buffer,
++                              0, 0, 0, 0,
++                              x + taps[i].dx,
++                              y + taps[i].dy,
++                              w, h);
++            XRenderFreePicture (dpy, alpha);
++        }
++    }
++    XRenderComposite (dpy, PictOpOver,
++                      tint, None,
++                      paint_buffer,
++                      0, 0, 0, 0,
++                      x, y,
++                      w, h);
++
++    XRenderFreePicture (dpy, tint);
++    XRenderFreePicture (dpy, backdrop_picture);
++    XFreePixmap (dpy, backdrop_pixmap);
++}
++
+ static void
+ paint_win (CWindow *cw, XserverRegion region, Picture paint_buffer, gboolean solid_part)
+ {
+@@ -2579,6 +2703,10 @@ paint_all (ScreenInfo *screen_info, XserverRegion region, gushort buffer)
+             }
+             XFixesIntersectRegion (dpy, cw->borderClip, cw->borderClip, cw->borderSize);
+             XFixesSetPictureClipRegion (dpy, paint_buffer, 0, 0, cw->borderClip);
++            if (is_liquid_glass_window (cw))
++            {
++                paint_liquid_glass_backdrop (cw, paint_region, paint_buffer);
++            }
+             paint_win (cw, paint_region, paint_buffer, FALSE);
+         }
+ 

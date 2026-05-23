@@ -37,7 +37,7 @@ https://github.com/user-attachments/assets/f6d84421-b1a2-44e2-ad01-1e775ac1c45b
 |---|---|---|
 | KDE Plasma (KWin) | Native KWin compositor effect | Full real-time refraction of the actual desktop behind the window, no feedback loop |
 | GNOME | App-side OpenGL fallback | XGetImage screen capture with blur and refraction shader |
-| XFCE | App-side OpenGL fallback | XGetImage screen capture with blur and refraction shader |
+| XFCE | `xfwm4` compositor-side liquid glass pass | Requires `xfwm4` compositing enabled; falls back to app-side shader mode if the compositor is off |
 | MATE | App-side OpenGL fallback | XGetImage screen capture with blur and refraction shader |
 | i3 / Openbox / other X11 | App-side OpenGL fallback | XGetImage screen capture with blur and refraction shader |
 | Wayland (any DE) | Shader fallback | Pure shader gradient, no screen capture |
@@ -45,7 +45,7 @@ https://github.com/user-attachments/assets/f6d84421-b1a2-44e2-ad01-1e775ac1c45b
 ## Features
 
 - Native KWin compositor effect for KDE Plasma: captures the actual desktop at compositor level, applies refraction, chromatic aberration, Blinn-Phong specular, fresnel, and frosted grain via GLSL
-- App-side OpenGL refraction fallback using X11 screen capture for non-KDE sessions
+- App-side OpenGL refraction fallback using X11 screen capture for non-KDE sessions, with compositor-side liquid glass support on XFCE when `xfwm4` compositing is enabled
 - KWin blur-behind support (Plasma desktop)
 - Tabbed terminal sessions with rename and reorder
 - Collapsible sidebar with tab navigator
@@ -68,7 +68,7 @@ sudo dpkg -i liquid-glass_1.0.0_amd64.deb
 **Dependencies:**
 
 ```bash
-sudo apt install gcc libgtk-3-dev libvte-2.91-dev libx11-dev libepoxy-dev libgl-dev xxd
+sudo apt install gcc libgtk-3-dev libvte-2.91-dev libx11-dev libxcomposite-dev libxrender-dev libepoxy-dev libgl-dev xxd
 ```
 
 **Compile:**
@@ -106,6 +106,38 @@ sudo make kwin-native-install
 ```
 
 This installs the KWin plugin and enables it automatically. The effect captures the composited desktop behind the terminal window directly in the compositor, with no X11 screen capture and no feedback loop.
+
+### XFCE Native Effect
+
+For true compositor-side liquid glass on XFCE, build and install the patched `xfwm4` compositor:
+
+**Dependencies:**
+
+```bash
+sudo apt install meson ninja-build libxfce4ui-2-dev libxfce4util-dev libxfconf-0-dev libwnck-3-dev libxres-dev libxrandr-dev libxdamage-dev libxfixes-dev libxcomposite-dev libxrender-dev libxext-dev libstartup-notification0-dev libxi-dev libxpresent-dev
+```
+
+**Build and install:**
+
+```bash
+make xfce-native-install
+```
+
+This fetches `xfwm4` into `./.xfwm4-src`, applies the liquid-glass compositor patch, builds it, and installs the compositor into `/usr/local/bin/xfwm4`.
+
+**Build a distributable .deb (no build toolchain required on the target machine):**
+
+```bash
+make deb-xfce
+sudo dpkg -i liquid-glass-xfwm4_1.0.0_amd64.deb
+xfwm4 --replace &
+```
+
+The `.deb` installs the patched compositor to `/usr/local/bin/xfwm4`, which shadows the system `xfwm4` via `PATH` precedence. The system `xfwm4` package is left intact.
+
+### XFCE Notes
+
+On XFCE, `xfwm4` must be running with compositing enabled for the compositor-side liquid glass path. If compositing is off, the app falls back to the shader path.
 
 **Build .deb package:**
 

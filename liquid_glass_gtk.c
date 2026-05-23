@@ -135,6 +135,24 @@ static void theme_set(GlassTheme*th,const char*preset,const char*hex,double op){
     theme_compute(th);
 }
 
+static gboolean xfce_session_active(void){
+    const char*desktop=getenv("XDG_CURRENT_DESKTOP");
+    const char*session=getenv("DESKTOP_SESSION");
+    return (desktop && strstr(desktop,"XFCE")) ||
+           (session && (strstr(session,"xfce") || strstr(session,"xfce4")));
+}
+
+static gboolean x11_compositor_active(void){
+    GdkDisplay*display=gdk_display_get_default();
+    if(!display||!GDK_IS_X11_DISPLAY(display))return FALSE;
+    Display*dpy=gdk_x11_display_get_xdisplay(GDK_X11_DISPLAY(display));
+    int screen=DefaultScreen(dpy);
+    char sel_name[32];
+    snprintf(sel_name,sizeof(sel_name),"_NET_WM_CM_%d",screen);
+    Atom sel=XInternAtom(dpy,sel_name,False);
+    return XGetSelectionOwner(dpy,sel)!=None;
+}
+
 typedef struct {
     double glass_opacity;
     char   preset[32];
@@ -1124,7 +1142,11 @@ int main(int argc,char*argv[]){
         const char*session=getenv("DESKTOP_SESSION");
         gboolean plasma = (desktop && (strstr(desktop,"KDE") || strstr(desktop,"Plasma"))) ||
                           (session && strstr(session,"plasma"));
-        backdrop_refraction_set_capture_enabled(&G.refract, !plasma);
+        gboolean xfce_backdrop = xfce_session_active() && x11_compositor_active();
+        backdrop_refraction_set_capture_enabled(&G.refract, !(plasma || xfce_backdrop));
+    }
+    if(xfce_session_active() && !x11_compositor_active()){
+        fprintf(stderr,"liquid-glass: XFCE needs xfwm4 compositor enabled for liquid refraction; falling back to shader mode.\n");
     }
     G.active=-1;
     snprintf(G.exe_path,sizeof(G.exe_path),"%s",(argc>0&&argv[0])?argv[0]:"./liquid_glass_gtk");
