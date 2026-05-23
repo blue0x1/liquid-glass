@@ -5,9 +5,12 @@
     <a href="https://github.com/blue0x1/liquid-glass/releases">
       <img src="https://img.shields.io/github/downloads/blue0x1/liquid-glass/total?style=for-the-badge&label=Downloads&color=4a90d9" alt="Downloads"/>
     </a>
-    <a href="https://github.com/blue0x1/liquid-glass/blob/main/LICENSE">
-      <img src="https://img.shields.io/github/license/blue0x1/liquid-glass?style=for-the-badge&color=4a90d9" alt="License"/>
+    <a href="https://github.com/blue0x1/liquid-glass/stargazers">
+      <img src="https://img.shields.io/github/stars/blue0x1/liquid-glass?style=for-the-badge&color=4a90d9" alt="Stars"/>
     </a>
+    <img src="https://img.shields.io/badge/version-1.0.0-4a90d9?style=for-the-badge" alt="Version"/>
+    <img src="https://img.shields.io/badge/language-C-4a90d9?style=for-the-badge&logo=c" alt="Language"/>
+    <img src="https://img.shields.io/badge/platform-Linux-4a90d9?style=for-the-badge&logo=linux&logoColor=white" alt="Platform"/>
   </p>
   <img src="liquid.png" width="220" alt="Liquid Glass Terminal"/>
 </p>
