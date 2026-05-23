@@ -264,6 +264,8 @@ static gboolean capture_composited_backdrop(
         XRenderFreePicture(dpy,clear_pic);
     }
 
+    GdkDisplay*_gdisp=gdk_display_get_default();
+    gdk_x11_display_error_trap_push(_gdisp);
     for(unsigned int i=0;i<nchildren;i++){
         Window win=children[i];
         if(win==frame){
@@ -285,11 +287,8 @@ static gboolean capture_composited_backdrop(
         int iy2=(cap_y+cap_h)<wb?(cap_y+cap_h):wb;
         if(ix1>=ix2 || iy1>=iy2)continue;
 
-        GdkDisplay*_gdisp=gdk_display_get_default();
-        gdk_x11_display_error_trap_push(_gdisp);
         Pixmap src_pix=XCompositeNameWindowPixmap(dpy,win);
-        XSync(dpy,False);
-        if(gdk_x11_display_error_trap_pop(_gdisp)||!src_pix)continue;
+        if(!src_pix)continue;
 
         XRenderPictFormat*src_fmt=XRenderFindVisualFormat(dpy,wa.visual);
         if(!src_fmt){
@@ -313,6 +312,7 @@ static gboolean capture_composited_backdrop(
         XRenderFreePicture(dpy,src_pic);
         XFreePixmap(dpy,src_pix);
     }
+    gdk_x11_display_error_trap_pop_ignored(_gdisp);
 
     if(children)XFree(children);
     XRenderFreePicture(dpy,dst_pic);
