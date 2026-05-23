@@ -1,8 +1,14 @@
-# Liquid Glass Terminal
-
-A GTK3 terminal emulator with a liquid glass aesthetic for Linux.
-
 <p align="center">
+  <h1 align="center">Liquid Glass Terminal</h1>
+  <p align="center">A GTK3 terminal emulator with a liquid glass aesthetic for Linux.</p>
+  <p align="center">
+    <a href="https://github.com/blue0x1/liquid-glass/releases">
+      <img src="https://img.shields.io/github/downloads/blue0x1/liquid-glass/total?style=for-the-badge&label=Downloads&color=4a90d9" alt="Downloads"/>
+    </a>
+    <a href="https://github.com/blue0x1/liquid-glass/blob/main/LICENSE">
+      <img src="https://img.shields.io/github/license/blue0x1/liquid-glass?style=for-the-badge&color=4a90d9" alt="License"/>
+    </a>
+  </p>
   <img src="liquid.png" width="220" alt="Liquid Glass Terminal"/>
 </p>
 
