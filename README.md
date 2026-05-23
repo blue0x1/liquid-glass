@@ -1,20 +1,21 @@
+<h1 align="center">Liquid Glass Terminal</h1>
+
+<p align="center">A GTK3 terminal emulator with a liquid glass aesthetic for Linux.</p>
+
 <p align="center">
-  <h1 align="center">Liquid Glass Terminal</h1>
-  <p align="center">A GTK3 terminal emulator with a liquid glass aesthetic for Linux.</p>
-  <p align="center">
-    <a href="https://github.com/blue0x1/liquid-glass/releases">
-      <img src="https://img.shields.io/github/downloads/blue0x1/liquid-glass/total?style=for-the-badge&label=Downloads&color=4a90d9" alt="Downloads"/>
-    </a>
-    <a href="https://github.com/blue0x1/liquid-glass/stargazers">
-      <img src="https://img.shields.io/github/stars/blue0x1/liquid-glass?style=for-the-badge&color=4a90d9" alt="Stars"/>
-    </a>
-    <img src="https://img.shields.io/badge/version-1.0.0-4a90d9?style=for-the-badge" alt="Version"/>
-    <img src="https://img.shields.io/badge/language-C-4a90d9?style=for-the-badge&logo=c" alt="Language"/>
-    <img src="https://img.shields.io/badge/platform-Linux-4a90d9?style=for-the-badge&logo=linux&logoColor=white" alt="Platform"/>
-  </p>
-  <br/>
+  <a href="https://github.com/blue0x1/liquid-glass/releases">
+    <img src="https://img.shields.io/github/downloads/blue0x1/liquid-glass/total?style=for-the-badge&label=Downloads&color=4a90d9" alt="Downloads"/>
+  </a>
+  <a href="https://github.com/blue0x1/liquid-glass/stargazers">
+    <img src="https://img.shields.io/github/stars/blue0x1/liquid-glass?style=for-the-badge&color=4a90d9" alt="Stars"/>
+  </a>
+  <img src="https://img.shields.io/badge/version-1.0.0-4a90d9?style=for-the-badge" alt="Version"/>
+  <img src="https://img.shields.io/badge/language-C-4a90d9?style=for-the-badge&logo=c" alt="Language"/>
+  <img src="https://img.shields.io/badge/platform-Linux-4a90d9?style=for-the-badge&logo=linux&logoColor=white" alt="Platform"/>
+</p>
+
+<p align="center">
   <img src="liquid.png" width="220" alt="Liquid Glass Terminal"/>
-  <br/>
 </p>
 
 ## Features
