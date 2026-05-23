@@ -1,0 +1,5 @@
+liquid_glass_gtk
+liquid_icon_data.h
+liquid-glass_*.deb
+.debpkg/
+pkg/

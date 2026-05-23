@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Liquid Glass
+Comment=Liquid Glass Terminal
+Exec=/usr/bin/liquid_glass_gtk
+Icon=liquid_glass
+Terminal=false
+Type=Application
+Categories=System;TerminalEmulator;
+StartupWMClass=liquid_glass_gtk
