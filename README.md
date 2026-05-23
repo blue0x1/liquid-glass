@@ -31,7 +31,8 @@ https://github.com/user-attachments/assets/edaa4c62-0834-4f24-9c17-2383366994b6
 ## Features
 
 - Translucent frosted-glass panels with chromatic tinting
-- KWin blur-behind support (Plasma desktop)
+- Native KWin effect package for compositor-side backdrop capture, refraction, blur, and background contrast
+- App-side OpenGL backdrop fallback for non-native sessions
 - Tabbed terminal sessions with rename and reorder
 - Collapsible sidebar with tab navigator
 - Live settings window, change theme color and glass opacity in real time
@@ -53,7 +54,7 @@ sudo dpkg -i liquid-glass_1.0.0_amd64.deb
 **Dependencies:**
 
 ```bash
-sudo apt install gcc libgtk-3-dev libvte-2.91-dev libx11-dev xxd
+sudo apt install gcc libgtk-3-dev libvte-2.91-dev libx11-dev libepoxy-dev libgl-dev xxd
 ```
 
 **Compile:**
@@ -68,11 +69,24 @@ make
 make deb
 ```
 
+**Install app and native KWin effect:**
+
+```bash
+sudo make install
+```
+
+The install target builds and installs the native C++ KWin effect automatically,
+then enables it for your Plasma session.
+
 **Run:**
 
 ```bash
 ./liquid_glass_gtk
 ```
+
+On Plasma, the native KWin effect captures the composited backdrop behind the
+window, then applies refraction and frosted glass in the compositor.
+The app-side X11 capture path is only a fallback for non-native cases.
 
 ## Keyboard Shortcuts
 

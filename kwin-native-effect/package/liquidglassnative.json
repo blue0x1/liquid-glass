@@ -1,0 +1,16 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Liquid Glass"
+            }
+        ],
+        "Category": "Appearance",
+        "Description": "Native compositor-side liquid glass refraction for Liquid Glass Terminal.",
+        "EnabledByDefault": false,
+        "Id": "liquidglassnative",
+        "License": "MIT",
+        "Name": "Liquid Glass Native C++"
+    },
+    "X-KDE-Ordering": 55
+}

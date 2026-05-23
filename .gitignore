@@ -3,3 +3,4 @@ liquid_icon_data.h
 liquid-glass_*.deb
 .debpkg/
 pkg/
+kwin-native-effect/build/

@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include "backdrop_refraction.h"
 
 #ifdef EMBED_ICON
 #include "liquid_icon_data.h"
@@ -177,10 +178,11 @@ typedef struct { int id; GtkWidget*vte,*tab_btn,*tab_box,*close_btn; char title[
 
 typedef struct {
     GtkWidget *window, *headerbar, *root, *hpaned, *sidebar_box, *sidebar_wrap;
-    GtkWidget *tab_bar_wrap, *tab_bar, *stack, *max_btn;
+    GtkWidget *tab_bar_wrap, *tab_bar, *terminal_overlay, *gl_area, *stack, *max_btn;
     GtkCssProvider *dyn_css;
     Tab        tabs[MAX_TABS];
     int        ntabs, active, next_id, maximized, wm_hover;
+    BackdropRefraction refract;
     GlassTheme theme;
     Config     cfg;
     char       exe_path[512];
@@ -439,6 +441,29 @@ static gboolean window_draw(GtkWidget*w,cairo_t*cr,gpointer d){
     return FALSE;
 }
 
+static void gl_area_realize(GtkGLArea*area,gpointer d){
+    (void)d;
+    backdrop_refraction_realize(&G.refract,area);
+}
+
+static void gl_area_unrealize(GtkGLArea*area,gpointer d){
+    (void)d;
+    backdrop_refraction_unrealize(&G.refract,area);
+}
+
+static gboolean gl_area_render(GtkGLArea*area,GdkGLContext*context,gpointer d){
+    (void)context;(void)d;
+    double op=fmax(0.0,fmin(1.0,G.cfg.glass_opacity));
+    return backdrop_refraction_render(&G.refract,area,G.window,GTK_WIDGET(area),
+        G.theme.ct_r,G.theme.ct_g,G.theme.ct_b,G.theme.ct_a,op);
+}
+
+static gboolean gl_tick(GtkWidget*w,GdkFrameClock*clock,gpointer d){
+    (void)clock;(void)d;
+    gtk_widget_queue_draw(w);
+    return G_SOURCE_CONTINUE;
+}
+
 static void vte_setup(GtkWidget*vte){
 
     GdkScreen*sc=gdk_screen_get_default();
@@ -449,7 +474,7 @@ static void vte_setup(GtkWidget*vte){
 static void vte_colors(GtkWidget*vte){
     const GlassTheme*th=&G.theme;
 
-    double tint_a = !strcmp(G.cfg.preset,"custom") ? fmin(0.20,th->ct_a*0.14) : fmin(0.28,th->ct_a*0.20);
+    double tint_a = !strcmp(G.cfg.preset,"custom") ? fmin(0.13,th->ct_a*0.10) : fmin(0.18,th->ct_a*0.13);
     GdkRGBA bg={th->ct_r,th->ct_g,th->ct_b,tint_a};
     GdkRGBA fg={0.92,0.93,0.97,1};
     GdkRGBA cur={1,1,1,0.9};
@@ -482,6 +507,7 @@ static void theme_apply(void){
     dyn_css_update();
     vte_colors_all();
     if(G.window) gtk_widget_queue_draw(G.window);
+    if(G.gl_area) gtk_widget_queue_draw(G.gl_area);
     if(G.window&&gtk_widget_get_realized(G.window)) apply_blur_hint(G.window);
 }
 
@@ -1090,7 +1116,16 @@ static gboolean on_key(GtkWidget*w,GdkEventKey*ev,gpointer d){
 
 int main(int argc,char*argv[]){
     gtk_init(&argc,&argv);
+    gdk_set_program_class("liquid_glass_gtk");
     memset(&G,0,sizeof(G));
+    backdrop_refraction_init(&G.refract);
+    {
+        const char*desktop=getenv("XDG_CURRENT_DESKTOP");
+        const char*session=getenv("DESKTOP_SESSION");
+        gboolean plasma = (desktop && (strstr(desktop,"KDE") || strstr(desktop,"Plasma"))) ||
+                          (session && strstr(session,"plasma"));
+        backdrop_refraction_set_capture_enabled(&G.refract, !plasma);
+    }
     G.active=-1;
     snprintf(G.exe_path,sizeof(G.exe_path),"%s",(argc>0&&argv[0])?argv[0]:"./liquid_glass_gtk");
 
@@ -1255,6 +1290,7 @@ int main(int argc,char*argv[]){
 
     GtkWidget*win=gtk_window_new(GTK_WINDOW_TOPLEVEL);
     G.window=win;
+    gtk_window_set_title(GTK_WINDOW(win),"Liquid Glass");
     if(rgba_vis){ gtk_widget_set_visual(win,rgba_vis); gtk_widget_set_app_paintable(win,TRUE); }
     {
         GdkPixbuf*ico=load_icon_pixbuf(0);
@@ -1399,13 +1435,34 @@ int main(int argc,char*argv[]){
         gtk_widget_hide(G.sidebar_wrap);
     }
 
+    GtkWidget*terminal_overlay=gtk_overlay_new();
+    G.terminal_overlay=terminal_overlay;
+    gtk_widget_set_name(terminal_overlay,"terminal-overlay");
+    gtk_widget_set_hexpand(terminal_overlay,TRUE);
+    gtk_widget_set_vexpand(terminal_overlay,TRUE);
+
+    GtkWidget*gl_area=gtk_gl_area_new();
+    G.gl_area=gl_area;
+    gtk_widget_set_name(gl_area,"liquid-gl");
+    gtk_widget_set_hexpand(gl_area,TRUE);
+    gtk_widget_set_vexpand(gl_area,TRUE);
+    gtk_gl_area_set_has_alpha(GTK_GL_AREA(gl_area),TRUE);
+    gtk_gl_area_set_required_version(GTK_GL_AREA(gl_area),3,3);
+    g_signal_connect(gl_area,"realize",G_CALLBACK(gl_area_realize),NULL);
+    g_signal_connect(gl_area,"unrealize",G_CALLBACK(gl_area_unrealize),NULL);
+    g_signal_connect(gl_area,"render",G_CALLBACK(gl_area_render),NULL);
+    gtk_widget_add_tick_callback(gl_area,gl_tick,NULL,NULL);
+    gtk_container_add(GTK_CONTAINER(terminal_overlay),gl_area);
+
     GtkWidget*stack=gtk_stack_new();
     G.stack=stack;
     gtk_widget_set_hexpand(stack,TRUE); gtk_widget_set_vexpand(stack,TRUE);
     gtk_stack_set_transition_type(GTK_STACK(stack),GTK_STACK_TRANSITION_TYPE_CROSSFADE);
     gtk_stack_set_transition_duration(GTK_STACK(stack),100);
     g_signal_connect(stack,"size-allocate",G_CALLBACK(on_layout_changed),NULL);
-    gtk_paned_pack2(GTK_PANED(hpaned),stack,TRUE,FALSE);
+    gtk_overlay_add_overlay(GTK_OVERLAY(terminal_overlay),stack);
+    gtk_overlay_set_overlay_pass_through(GTK_OVERLAY(terminal_overlay),stack,FALSE);
+    gtk_paned_pack2(GTK_PANED(hpaned),terminal_overlay,TRUE,FALSE);
 
     tab_switch(tab_add());
 
