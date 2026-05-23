@@ -197,9 +197,6 @@ void LiquidGlassNativeEffect::prePaintWindow(EffectWindow *window, WindowPrePain
         data.setTranslucent();
         window->setData(KWin::WindowForceBlurRole, true);
         window->setData(KWin::WindowForceBackgroundContrastRole, true);
-    } else {
-        window->setData(KWin::WindowForceBlurRole, QVariant());
-        window->setData(KWin::WindowForceBackgroundContrastRole, QVariant());
     }
     effects->prePaintWindow(window, data, presentTime);
 }
