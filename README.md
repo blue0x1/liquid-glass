@@ -1,6 +1,6 @@
 <h1 align="center">Liquid Glass Terminal</h1>
 
-<p align="center">A GTK3 terminal emulator with a liquid glass aesthetic for Linux.</p>
+<p align="center">A GTK3 terminal emulator with real-time liquid glass refraction for Linux.</p>
 
 <p align="center">
   <a href="https://github.com/blue0x1/liquid-glass/releases">
@@ -20,7 +20,7 @@
 
 ## Demo
 
-https://github.com/user-attachments/assets/edaa4c62-0834-4f24-9c17-2383366994b6
+https://github.com/user-attachments/assets/edaa4c62-0834-4f24-9c17-2383366954b6
 
 ## Screenshot
 
@@ -30,12 +30,12 @@ https://github.com/user-attachments/assets/edaa4c62-0834-4f24-9c17-2383366994b6
 
 ## Features
 
-- Translucent frosted-glass panels with chromatic tinting
-- Native KWin effect package for compositor-side backdrop capture, refraction, blur, and background contrast
-- App-side OpenGL backdrop fallback for non-native sessions
+- **Native KWin compositor effect** — captures the actual desktop behind the window at compositor level, applies real-time refraction, chromatic aberration, Blinn-Phong specular, fresnel, and frosted grain via GLSL
+- **App-side OpenGL refraction fallback** — XGetImage-based backdrop capture with multi-tap blur and chromatic aberration shader for non-KDE sessions
+- KWin blur-behind support (Plasma desktop)
 - Tabbed terminal sessions with rename and reorder
 - Collapsible sidebar with tab navigator
-- Live settings window, change theme color and glass opacity in real time
+- Live settings window — change theme color and glass opacity in real time
 - macOS-style window controls
 - 9 built-in color themes: Blue Frost, Graphite, Red, Blue, Yellow, Purple, Pink, Black, Gray
 - Custom hex color picker
@@ -63,20 +63,11 @@ sudo apt install gcc libgtk-3-dev libvte-2.91-dev libx11-dev libepoxy-dev libgl-
 make
 ```
 
-**Build .deb package:**
-
-```bash
-make deb
-```
-
-**Install app and native KWin effect:**
+**Install binary, icon and desktop launcher:**
 
 ```bash
 sudo make install
 ```
-
-The install target builds and installs the native C++ KWin effect automatically,
-then enables it for your Plasma session.
 
 **Run:**
 
@@ -84,9 +75,29 @@ then enables it for your Plasma session.
 ./liquid_glass_gtk
 ```
 
-On Plasma, the native KWin effect captures the composited backdrop behind the
-window, then applies refraction and frosted glass in the compositor.
-The app-side X11 capture path is only a fallback for non-native cases.
+### KWin Native Effect (KDE Plasma only)
+
+For true compositor-level glass refraction on KDE Plasma, build and install the native KWin effect:
+
+**Dependencies:**
+
+```bash
+sudo apt install cmake kwin-dev qt6-base-dev libkf6coreaddons-dev extra-cmake-modules
+```
+
+**Build and install:**
+
+```bash
+sudo make kwin-native-install
+```
+
+This installs the KWin plugin and enables it automatically. The effect captures the composited desktop behind the terminal window directly in the compositor — no X11 screen capture needed, no feedback loop.
+
+**Build .deb package:**
+
+```bash
+make deb
+```
 
 ## Keyboard Shortcuts
 
