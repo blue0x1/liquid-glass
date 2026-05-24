@@ -106,7 +106,8 @@ deb-xfce: xfce-native-build
 	@echo "Install: sudo dpkg -i $(XFCE_DEB)"
 	@echo "Activate: xfwm4 --replace &"
 
-install: binary kwin-native-install
+install: binary
+	@if command -v cmake >/dev/null 2>&1; then $(MAKE) kwin-native-install; fi
 	install -Dm755 $(BINARY)   $(DESTDIR)$(BINDIR)/$(BINARY)
 	install -Dm644 liquid.png  $(DESTDIR)$(ICONDIR)/liquid_glass.png
 	install -Dm644 liquid_glass.desktop $(DESTDIR)$(APPDIR)/liquid_glass.desktop
@@ -144,12 +145,17 @@ xfce-native-fetch:
 	fi
 
 xfce-native-build: xfce-native-fetch
-	@if cd $(XFWM4_SRC) && git apply --reverse --check $(XFWM4_PATCH); then \
+	@cd $(XFWM4_SRC) && \
+	if git apply --reverse --check $(XFWM4_PATCH) 2>/dev/null; then \
 		echo "xfwm4 patch already applied"; \
 	else \
-		cd $(XFWM4_SRC) && git apply $(XFWM4_PATCH); \
+		git apply $(XFWM4_PATCH); \
 	fi
-	meson setup $(XFWM4_BUILD) $(XFWM4_SRC)
+	if [ -d "$(XFWM4_BUILD)" ]; then \
+		meson setup --reconfigure $(XFWM4_BUILD) $(XFWM4_SRC); \
+	else \
+		meson setup $(XFWM4_BUILD) $(XFWM4_SRC); \
+	fi
 	meson compile -C $(XFWM4_BUILD)
 
 xfce-native-install: xfce-native-build
